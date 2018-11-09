@@ -85,10 +85,10 @@ def build_one(py_ver, compiler):
 
     return r"""
 setlocal EnableDelayedExpansion
-call "%%ProgramFiles%%\Microsoft SDKs\Windows\%(env_version)s\Bin\SetEnv.Cmd" /Release %(env_flags)s
+call "%%ProgramFiles(x86)%%\Microsoft Visual Studio\2017\Enterprise\VC\Auxiliary\Build\vcvarsamd64_arm.bat"
 set DISTUTILS_USE_SDK=1
-set LIB=%%LIB%%;%%INCLIB%%\%(inc_dir)s
-set INCLUDE=%%INCLUDE%%;%%INCLIB%%\%(inc_dir)s;%%INCLIB%%\tcl%(tcl_ver)s\include
+set LIB=%%LIB%%;%%INCLIB%%\msvcr10-arm
+set INCLUDE=%%INCLUDE%%;%%INCLIB%%\msvcr-arm;%%INCLIB%%\tcl86\include
 
 setlocal
 set LIB=%%LIB%%;C:\Python%(py_ver)s\tcl
@@ -155,7 +155,7 @@ if __name__ == '__main__':
     if '--dist' in opts:
         op = "bdist_wininst --user-access-control=auto"
     elif '--wheel' in opts:
-        op = "bdist_wheel"
+        op = "build_ext --include-dirs=\"F:\\code\\pyiot\\arm32\\python\\include;E:\\code\\Pillow\\winbuild\\depends\\msvcr90-arm\" --library-dirs=\"F:\\code\\pyiot\\arm32\\python\\libs;E:\\code\\Pillow\\winbuild\\depends\\msvcr90-arm\" bdist_wheel --plat-name=win-arm"
 
     if 'PYTHON' in os.environ:
         run_one(op)

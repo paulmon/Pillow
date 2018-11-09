@@ -1,18 +1,20 @@
 from unzip import unzip
 from untar import untar
-import os
+import os, inspect
 
 from fetch import fetch
 from config import compilers, compiler_from_env, libs
 
 
 def _relpath(*args):
-    return os.path.join(os.getcwd(), *args)
-
+    winbuild_dir = os.path.dirname(os.path.abspath(os.path.abspath(inspect.getfile(inspect.currentframe()))))
+    return os.path.join(winbuild_dir, *args)
 
 build_dir = _relpath('build')
 inc_dir = _relpath('depends')
 
+print('build_dir={}'.format(build_dir))
+print('inc_dir={}'.format(inc_dir))
 
 def check_sig(filename, signame):
     # UNDONE -- need gpg
@@ -35,10 +37,16 @@ def mkdirs():
             pass
 
 
-def extract(src, dest):
+def extract(src, dest, dir):
+    target = os.path.join(dest,dir)
+    if os.path.exists(target):
+        print('found {}'.format(target))
+        return target
     if '.zip' in src:
+        print('unzip {} to {}'.format(src, dest))
         return unzip(src, dest)
     if '.tar.gz' in src or '.tgz' in src:
+        print('untar {} to {}'.format(src, dest))
         return untar(src, dest)
 
 
@@ -49,14 +57,15 @@ def extract_libs():
             filename = fetch(lib['url'])
         if name == 'openjpeg':
             for compiler in compilers.values():
-                if not os.path.exists(os.path.join(
-                        build_dir, lib['dir']+compiler['inc_dir'])):
-                    extract(filename, build_dir)
-                    os.rename(os.path.join(build_dir, lib['dir']),
-                              os.path.join(
-                                  build_dir, lib['dir']+compiler['inc_dir']))
+                inc_dir = os.path.join(build_dir, lib['dir']+compiler['inc_dir'])
+                lib_dir = os.path.join(build_dir, lib['dir'])
+                if not os.path.exists(inc_dir):
+                    extract(filename, build_dir, lib['dir'])
+                    os.rename(lib_dir, inc_dir)
+                else:
+                    print('found {}'.format(inc_dir))
         else:
-            extract(filename, build_dir)
+            extract(filename, build_dir, lib['dir'])
 
 
 def extract_openjpeg(compiler):
@@ -90,7 +99,7 @@ copy /Y /B %%BUILD%%\tk%(ver_86)s\xlib\X11\* %%INCLIB%%\tcl86\include\X11\
 
 def header():
     return r"""setlocal
-set MSBUILD=C:\Windows\Microsoft.NET\Framework64\v4.0.30319\MSBuild.exe
+set MSBUILD="C:\Program Files (x86)\Microsoft Visual Studio\2017\Enterprise\MSBuild\15.0\Bin\MSBuild.exe"
 set CMAKE="cmake.exe"
 set INCLIB=%~dp0\depends
 set BUILD=%~dp0\build
@@ -100,8 +109,9 @@ set BUILD=%~dp0\build
 
 def setup_compiler(compiler):
     return r"""setlocal EnableDelayedExpansion
-call "%%ProgramFiles%%\Microsoft SDKs\Windows\%(env_version)s\Bin\SetEnv.Cmd" /Release %(env_flags)s
-set INCLIB=%%INCLIB%%\%(inc_dir)s
+call "%%ProgramFiles(x86)%%\Microsoft Visual Studio\2017\Enterprise\VC\Auxiliary\Build\vcvarsamd64_arm.bat"
+set INCLUDE=%%INCLUDE%%;C:\Program Files\Microsoft SDKs\Windows\v7.1\Include
+set INCLIB=%%INCLIB%%\msvcr90-arm
 """ % compiler
 
 
@@ -154,7 +164,7 @@ def nmake_libs(compiler):
 rem Build libjpeg
 setlocal
 cd /D %%JPEG%%
-nmake -f makefile.vc setup-vc6
+nmake -f makefile.vc setup-v15
 nmake -f makefile.vc clean
 nmake -f makefile.vc libjpeg.lib
 copy /Y /B *.dll %%INCLIB%%
@@ -212,9 +222,9 @@ def msbuild_freetype_71(compiler):
 rem Build freetype
 setlocal
 rd /S /Q %%FREETYPE%%\objs
-%%MSBUILD%% %%FREETYPE%%\builds\windows\vc%(vc_version)s\freetype.sln /t:Clean;Build /p:Configuration="Release" /p:Platform=%(platform)s /m
+%%MSBUILD%% %%FREETYPE%%\builds\windows\vc2010\freetype.sln /t:Clean;Build /p:Configuration="Release" /p:Platform=ARM /m
 xcopy /Y /E /Q %%FREETYPE%%\include %%INCLIB%%
-copy /Y /B %%FREETYPE%%\objs\vc%(vc_version)s\%(platform)s\*.lib %%INCLIB%%\freetype.lib
+copy /Y /B %%FREETYPE%%\objs\vc2010\arm\*.lib %%INCLIB%%\freetype.lib
 endlocal
 """ % compiler
 
@@ -223,13 +233,13 @@ def msbuild_freetype_70(compiler):
     return r"""
 rem Build freetype
 setlocal
-py -3 %%~dp0\fixproj.py %%FREETYPE%%\builds\windows\vc%(vc_version)s\freetype.sln %(platform)s
-py -3 %%~dp0\fixproj.py %%FREETYPE%%\builds\windows\vc%(vc_version)s\freetype.vcproj %(platform)s
+py -3 %%~dp0\fixproj.py %%FREETYPE%%\builds\windows\vc2010\freetype.sln %(platform)s
+py -3 %%~dp0\fixproj.py %%FREETYPE%%\builds\windows\vc2010\freetype.vcproj %(platform)s
 rd /S /Q %%FREETYPE%%\objs
-%%MSBUILD%% %%FREETYPE%%\builds\windows\vc%(vc_version)s\freetype.sln /t:Clean;Build /p:Configuration="LIB Release";Platform=%(platform)s /m
+%%MSBUILD%% %%FREETYPE%%\builds\windows\vc2010\freetype.sln /t:Clean;Build /p:Configuration="LIB Release";Platform=%(platform)s /m
 xcopy /Y /E /Q %%FREETYPE%%\include %%INCLIB%%
-xcopy /Y /E /Q %%FREETYPE%%\objs\win32\vc%(vc_version)s %%INCLIB%%
-copy /Y /B %%FREETYPE%%\objs\win32\vc%(vc_version)s\*.lib %%INCLIB%%\freetype.lib
+xcopy /Y /E /Q %%FREETYPE%%\objs\arm\vc2010 %%INCLIB%%
+copy /Y /B %%FREETYPE%%\objs\arm\vc2010\*.lib %%INCLIB%%\freetype.lib
 endlocal
 """ % compiler
 
@@ -250,11 +260,11 @@ def build_lcms_70(compiler):
 rem Build lcms2
 setlocal
 rd /S /Q %%LCMS%%\Lib
-rd /S /Q %%LCMS%%\Projects\VC%(vc_version)s\Release
-%%MSBUILD%% %%LCMS%%\Projects\VC%(vc_version)s\lcms2.sln  /t:Clean /p:Configuration="Release" /p:Platform=Win32 /m
-%%MSBUILD%% %%LCMS%%\Projects\VC%(vc_version)s\lcms2.sln /t:lcms2_static /p:Configuration="Release" /p:Platform=Win32 /m
+rd /S /Q %%LCMS%%\Projects\VS2013\Release
+%%MSBUILD%% %%LCMS%%\Projects\VS2013\lcms2.sln  /t:Clean /p:Configuration="Release" /p:Platform=ARM /m
+%%MSBUILD%% %%LCMS%%\Projects\VS2013\lcms2.sln /t:lcms2_static /p:Configuration="Release" /p:Platform=ARM /m
 xcopy /Y /E /Q %%LCMS%%\include %%INCLIB%%
-copy /Y /B %%LCMS%%\Projects\VC%(vc_version)s\Release\*.lib %%INCLIB%%
+copy /Y /B %%LCMS%%\Projects\VS2013\Release\*.lib %%INCLIB%%
 endlocal
 """ % compiler
 
@@ -264,9 +274,9 @@ def build_lcms_71(compiler):
 rem Build lcms2
 setlocal
 rd /S /Q %%LCMS%%\Lib
-rd /S /Q %%LCMS%%\Projects\VC%(vc_version)s\Release
-%%MSBUILD%% %%LCMS%%\Projects\VC%(vc_version)s\lcms2.sln  /t:Clean /p:Configuration="Release" /p:Platform=%(platform)s /m
-%%MSBUILD%% %%LCMS%%\Projects\VC%(vc_version)s\lcms2.sln  /t:lcms2_static /p:Configuration="Release" /p:Platform=%(platform)s /m
+rd /S /Q %%LCMS%%\Projects\VS2013\Release
+%%MSBUILD%% %%LCMS%%\Projects\VS2013\lcms2.sln  /t:Clean /p:Configuration="Release" /p:Platform=%(platform)s /m
+%%MSBUILD%% %%LCMS%%\Projects\VS2013\lcms2.sln  /t:lcms2_static /p:Configuration="Release" /p:Platform=%(platform)s /m
 xcopy /Y /E /Q %%LCMS%%\include %%INCLIB%%
 copy /Y /B %%LCMS%%\Lib\MS\*.lib %%INCLIB%%
 endlocal
