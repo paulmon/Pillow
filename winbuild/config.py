@@ -46,23 +46,23 @@ libs = {
     'tcl-8.5': {
         'url': SF_MIRROR+'/project/tcl/Tcl/8.5.19/tcl8519-src.zip',
         'filename': PILLOW_DEPENDS_DIR + 'tcl8519-src.zip',
-        'dir': '',
+        'dir': 'tcl8.5.19',
     },
     'tk-8.5': {
         'url': SF_MIRROR+'/project/tcl/Tcl/8.5.19/tk8519-src.zip',
         'filename': PILLOW_DEPENDS_DIR + 'tk8519-src.zip',
-        'dir': '',
+        'dir': 'tk8.5.19',
         'version': '8.5.19',
     },
     'tcl-8.6': {
         'url': SF_MIRROR+'/project/tcl/Tcl/8.6.8/tcl868-src.zip',
         'filename': PILLOW_DEPENDS_DIR + 'tcl868-src.zip',
-        'dir': '',
+        'dir': 'tcl8.6.8',
     },
     'tk-8.6': {
         'url': SF_MIRROR+'/project/tcl/Tcl/8.6.8/tk868-src.zip',
         'filename': PILLOW_DEPENDS_DIR + 'tk868-src.zip',
-        'dir': '',
+        'dir': 'tk8.6.8',
         'version': '8.6.8',
     },
     'webp': {
@@ -71,7 +71,7 @@ libs = {
         'dir': 'libwebp-1.0.0',
     },
     'openjpeg': {
-        'url': SF_MIRROR+'/project/openjpeg/openjpeg/2.3.0/openjpeg-2.3.0.tar.gz',
+        'url': 'https://github.com/uclouvain/openjpeg/archive/v2.3.0.tar.gz',
         'filename': PILLOW_DEPENDS_DIR + 'openjpeg-2.3.0.tar.gz',
         'dir': 'openjpeg-2.3.0',
     },

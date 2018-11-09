@@ -1,6 +1,6 @@
 from unzip import unzip
 from untar import untar
-import os
+import os, inspect
 
 from fetch import fetch
 from config import (compilers, all_compilers, compiler_from_env, bit_from_env,
@@ -9,12 +9,14 @@ from build import vc_setup
 
 
 def _relpath(*args):
-    return os.path.join(os.getcwd(), *args)
-
+    winbuild_dir = os.path.dirname(os.path.abspath(os.path.abspath(inspect.getfile(inspect.currentframe()))))
+    return os.path.join(winbuild_dir, *args)
 
 build_dir = _relpath('build')
 inc_dir = _relpath('depends')
 
+print('build_dir={}'.format(build_dir))
+print('inc_dir={}'.format(inc_dir))
 
 def check_sig(filename, signame):
     # UNDONE -- need gpg
@@ -37,10 +39,16 @@ def mkdirs():
             pass
 
 
-def extract(src, dest):
+def extract(src, dest, dir):
+    target = os.path.join(dest,dir)
+    if os.path.exists(target):
+        print('found {}'.format(target))
+        return target
     if '.zip' in src:
+        print('unzip {} to {}'.format(src, dest))
         return unzip(src, dest)
     if '.tar.gz' in src or '.tgz' in src:
+        print('untar {} to {}'.format(src, dest))
         return untar(src, dest)
 
 
@@ -51,14 +59,15 @@ def extract_libs():
             filename = fetch(lib['url'])
         if name == 'openjpeg':
             for compiler in all_compilers():
-                if not os.path.exists(os.path.join(
-                        build_dir, lib['dir']+compiler['inc_dir'])):
-                    extract(filename, build_dir)
-                    os.rename(os.path.join(build_dir, lib['dir']),
-                              os.path.join(
-                                  build_dir, lib['dir']+compiler['inc_dir']))
+                inc_dir = os.path.join(build_dir, lib['dir']+compiler['inc_dir'])
+                lib_dir = os.path.join(build_dir, lib['dir'])
+                if not os.path.exists(inc_dir):
+                    extract(filename, build_dir, lib['dir'])
+                    os.rename(lib_dir, inc_dir)
+                else:
+                    print('found {}'.format(inc_dir))
         else:
-            extract(filename, build_dir)
+            extract(filename, build_dir, lib['dir'])
 
 
 def extract_openjpeg(compiler):

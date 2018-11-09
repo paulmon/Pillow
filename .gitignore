@@ -78,3 +78,8 @@ Tests/images/README.md
 Tests/images/msp
 Tests/images/picins
 Tests/images/sunraster
+
+# Windows build
+.vscode
+winbuild/build_deps.cmd
+winbuild/depends
