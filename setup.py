@@ -630,6 +630,7 @@ class pil_build_ext(build_ext):
         exts = [(Extension("PIL._imaging",
                            files,
                            libraries=libs,
+                           extra_link_args=['/NODEFAULTLIB:LIBCMTD', '/DEBUG'],
                            define_macros=defs))]
 
         #

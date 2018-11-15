@@ -155,7 +155,7 @@ if __name__ == '__main__':
     if '--dist' in opts:
         op = "bdist_wininst --user-access-control=auto"
     elif '--wheel' in opts:
-        op = "build_ext --include-dirs=\"F:\\code\\pyiot\\arm32\\python\\include;E:\\code\\Pillow\\winbuild\\depends\\msvcr90-arm\" --library-dirs=\"F:\\code\\pyiot\\arm32\\python\\libs;E:\\code\\Pillow\\winbuild\\depends\\msvcr90-arm\" bdist_wheel --plat-name=win-arm"
+        op = "build_ext -j1 --include-dirs=\"E:\\code\\Pillow\\winbuild\\depends\\msvcr90-arm;F:\\code\\pyiot\\arm32\\python\\include\" --library-dirs=\"E:\\code\\Pillow\\winbuild\\depends\\msvcr90-arm;F:\\code\\pyiot\\arm32\\python\\libs\" bdist_wheel --plat-name=win-arm"
 
     if 'PYTHON' in os.environ:
         run_one(op)
